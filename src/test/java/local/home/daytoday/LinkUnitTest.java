@@ -2,10 +2,12 @@ package local.home.daytoday;
 
 import local.home.daytoday.dto.LinkDto;
 import local.home.daytoday.exception.BadLinkException;
+import local.home.daytoday.exception.NotFoundLinkException;
 import local.home.daytoday.service.LinkService;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -44,12 +46,14 @@ public class LinkUnitTest {
 
     @ParameterizedTest
     @NullAndEmptySource
+    @DisplayName("Test checks if throws by null or empty url while saving link")
     public void shouldNotGenerate_throw_if_empty(String url) {
         Assertions.assertThrows(BadLinkException.class, () -> linkService.save(url));
     }
 
     @ParameterizedTest
     @MethodSource("getParametersSource")
+    @DisplayName("Test successfully saves all parametrized urls by short variant")
     public void shouldGenerate_save_and_successfullyGetLinkByShort(String url) {
         LinkDto dto = linkService.save(url);
         Assertions.assertNotNull(dto);
@@ -61,6 +65,36 @@ public class LinkUnitTest {
         Assertions.assertEquals(dto.fullUrl(), foundDto.fullUrl());
         Assertions.assertEquals(dto.shortcutUrl(), foundDto.shortcutUrl());
         Assertions.assertEquals(dto.redirectUrl(), foundDto.redirectUrl());
+    }
+
+    @Test
+    @DisplayName("Test checks if throws by non-existing short url")
+    public void haveNonExistingLink_shouldThrowException() {
+        final String url = "https://test.link.org";
+        Assertions.assertThrows(NotFoundLinkException.class, () -> linkService.getByShort(url));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getParametersSource")
+    @DisplayName("Test successfully saves all parametrized urls by unique identifier")
+    public void shouldGenerate_save_and_successfullyGetLinkByUniqueId(String url) {
+        LinkDto dto = linkService.save(url);
+        Assertions.assertNotNull(dto);
+        Assertions.assertNotNull(dto.id());
+        LinkDto foundDto = linkService.getById(dto.id());
+        Assertions.assertNotNull(foundDto);
+        Assertions.assertNotNull(foundDto.shortcutUrl());
+        Assertions.assertEquals(dto.id(), foundDto.id());
+        Assertions.assertEquals(dto.fullUrl(), foundDto.fullUrl());
+        Assertions.assertEquals(dto.shortcutUrl(), foundDto.shortcutUrl());
+        Assertions.assertEquals(dto.redirectUrl(), foundDto.redirectUrl());
+    }
+
+    @Test
+    @DisplayName("Test checks if throws by non-existing identifier")
+    public void haveNonExistingUniqueId_shouldThrowException() {
+        final Long id = 1L;
+        Assertions.assertThrows(NotFoundLinkException.class, () -> linkService.getById(id));
     }
 
     private static Stream<String> getParametersSource() {
